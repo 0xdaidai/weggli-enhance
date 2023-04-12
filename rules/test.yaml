@@ -1,0 +1,20 @@
+issue: "test"
+discription: "test"
+rules:
+  - reason: "CVE-2022-3545"
+    regexes:
+      - "init=_init"
+    patterns: 
+    - |
+      _ $func(_ id) {
+          struct _* $cache; 
+          $cache->id = $id; 
+          $err = $init(_); 
+          if ($err < 0){
+            return _;
+          }
+        }
+  - reason: "memcpy"
+    regexes:
+    patterns: 
+    - "{$buf[_];memcpy($buf,_,_);}"

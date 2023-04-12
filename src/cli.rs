@@ -19,12 +19,13 @@ use simplelog::*;
 use std::path::{Path, PathBuf};
 
 pub struct Args {
-    pub path: PathBuf,
-    pub pattern: Vec<String>,
+    pub code_path: PathBuf,
+    // pub pattern: Vec<String>,
+    pub rule_path: PathBuf,
     pub before: usize,
     pub after: usize,
     pub extensions: Vec<String>,
-    pub regexes: Vec<String>,
+    // pub regexes: Vec<String>,
     pub limit: bool,
     pub cpp: bool,
     pub unique: bool,
@@ -39,8 +40,6 @@ pub struct Args {
 /// The clap crate handles program exit and error messages for invalid arguments.
 pub fn parse_arguments() -> Args {
     let matches = App::new("weggli")
-        .version("0.2.4")
-        .author("Felix Wilhelm <fwilhelm@google.com>")
         .about(help::ABOUT)
         .setting(clap::AppSettings::ArgRequiredElseHelp)
         .setting(clap::AppSettings::UnifiedHelpMessage)
@@ -48,21 +47,21 @@ pub fn parse_arguments() -> Args {
         .help_message("Prints help information.")
         .version_message("Prints version information.")
         .arg(
-            Arg::with_name("PATTERN")
-                .help("Search pattern.")
-                .long_help(help::PATTERN)
+            Arg::with_name("RULES")
+                .help("A file or directory to search rules.")
+                .long_help(help::RULES)
                 .required(true)
                 .index(1),
         )
-        .arg(
-            Arg::with_name("p")
-                .long("pattern")
-                .short("p")
-                .help("Specify additional search patterns.")
-                .takes_value(true)
-                .multiple(true)
-                .number_of_values(1),
-        )
+        // .arg(
+        //     Arg::with_name("p")
+        //         .long("pattern")
+        //         .short("p")
+        //         .help("Specify additional search patterns.")
+        //         .takes_value(true)
+        //         .multiple(true)
+        //         .number_of_values(1),
+        // )
         .arg(
             Arg::with_name("PATH")
                 .help("A file or directory to search.")
@@ -106,16 +105,16 @@ pub fn parse_arguments() -> Args {
                 .takes_value(false)
                 .help("Only show the first match in each function."),
         )
-        .arg(
-            Arg::with_name("regex")
-                .long("regex")
-                .short("R")
-                .takes_value(true)
-                .multiple(true)
-                .number_of_values(1)
-                .help("Enforce that a variable has to (not) match a regex.")
-                .long_help(help::REGEX),
-        )
+        // .arg(
+        //     Arg::with_name("regex")
+        //         .long("regex")
+        //         .short("R")
+        //         .takes_value(true)
+        //         .multiple(true)
+        //         .number_of_values(1)
+        //         .help("Enforce that a variable has to (not) match a regex.")
+        //         .long_help(help::REGEX),
+        // )
         .arg(
             Arg::with_name("cpp")
                 .short("X")
@@ -184,20 +183,29 @@ pub fn parse_arguments() -> Args {
 
     let _ = SimpleLogger::init(level, Config::default());
 
-    let directory = Path::new(matches.value_of("PATH").unwrap_or("."));
+    let directory_code = Path::new(matches.value_of("PATH").unwrap_or("."));
+    let directory_rule = Path::new(matches.value_of("RULES").unwrap_or("."));
 
-    let mut pattern = vec![matches.value_of("PATTERN").unwrap().to_string()];
-    if let Some(p) = matches.values_of("p") {
-        pattern.extend(p.map(|v| v.to_string()))
-    }
+    // let mut pattern = vec![matches.value_of("PATTERN").unwrap().to_string()];
+    // if let Some(p) = matches.values_of("p") {
+    //     pattern.extend(p.map(|v| v.to_string()))
+    // }
 
-    let regexes = helper("regex");
+    // let regexes = helper("regex");
 
-    let path = if directory.is_absolute() || directory.to_string_lossy() == "-" {
-        directory.to_path_buf()
+    let path = if directory_code.is_absolute() || directory_code.to_string_lossy() == "-" {
+        directory_code.to_path_buf()
     } else {
-        std::env::current_dir().unwrap().join(directory)
+        std::env::current_dir().unwrap().join(directory_code)
     };
+
+    let pattern = if directory_rule.is_absolute() || directory_rule.to_string_lossy() == "-" {
+        directory_rule.to_path_buf()
+    } else {
+        std::env::current_dir().unwrap().join(directory_rule)
+    };
+
+    
 
     let before = match matches.value_of("before") {
         Some(v) => v.parse().unwrap_or(5),
@@ -243,12 +251,12 @@ pub fn parse_arguments() -> Args {
     let enable_line_numbers = matches.occurrences_of("line-numbers") > 0;
 
     Args {
-        path,
-        pattern,
+        code_path: path,
+        rule_path: pattern,
         before,
         after,
         extensions,
-        regexes,
+        // regexes,
         limit,
         cpp,
         unique,
@@ -270,9 +278,6 @@ mod help {
  Homepage: https://github.com/googleprojectzero/weggli";
 
     pub const TEMPLATE: &str = "\
- {bin} {version}
- {author}
- 
  {about}
  
  USAGE: {usage}
@@ -283,7 +288,7 @@ mod help {
  OPTIONS:
  {unified}";
 
-    pub const PATTERN: &str = "\
+    pub const RULES: &str = "\
  A weggli search pattern. weggli's query language closely resembles
  C and C++ with a small number of extra features.
  
@@ -338,20 +343,20 @@ strict:   Enable stricter matching. This turns off statement unwrapping and gree
  and piping a list of filenames.
  ";
 
-    pub const REGEX: &str = "\
- Filter variable matches based on a regular expression. 
- This feature uses the Rust regex crate, so most Perl-style
- regular expression features are supported.
- (see https://docs.rs/regex/1.5.4/regex/#syntax)
+//     pub const REGEX: &str = "\
+//  Filter variable matches based on a regular expression. 
+//  This feature uses the Rust regex crate, so most Perl-style
+//  regular expression features are supported.
+//  (see https://docs.rs/regex/1.5.4/regex/#syntax)
  
- Examples:
+//  Examples:
  
- Find calls to functions starting with the string 'mem':
- weggli -R 'func=^mem' '$func(_);'       
+//  Find calls to functions starting with the string 'mem':
+//  weggli -R 'func=^mem' '$func(_);'       
  
- Find memcpy calls where the last argument is NOT named 'size':
- weggli -R 's!=^size$' 'memcpy(_,_,$s);' 
- ";
+//  Find memcpy calls where the last argument is NOT named 'size':
+//  weggli -R 's!=^size$' 'memcpy(_,_,$s);' 
+//  ";
 
     pub const UNIQUE: &str = "\
  Enforce uniqueness of variable matches.

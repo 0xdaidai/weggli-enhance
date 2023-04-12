@@ -21,6 +21,7 @@ use query::QueryTree;
 use regex::Regex;
 use tree_sitter::{Language, Parser, Query, Tree};
 
+
 #[macro_use]
 extern crate log;
 
@@ -37,6 +38,7 @@ extern "C" {
     fn tree_sitter_c() -> Language;
     fn tree_sitter_cpp() -> Language;
 }
+
 
 #[derive(Debug, Clone)]
 pub struct QueryError {
@@ -106,6 +108,8 @@ impl RegexMap {
         }
     }
 }
+
+
 
 /// Translate the search pattern in `pattern` into a weggli QueryTree.
 /// `is_cpp` enables C++ mode. `force_query` can be used to allow queries with syntax errors.

@@ -2,7 +2,7 @@
 name = "weggli"
 version = "0.2.4"
 authors = ["fwilhelm"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 description = "weggli is a fast and robust semantic search tool for C and C++ codebases. It is designed to help security researchers identify interesting functionality in large codebases."
 
@@ -27,6 +27,8 @@ simplelog = "0.12.0"
 regex = "1"
 rustc-hash = "1.1.0"
 thread_local = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
 
 
 [dependencies.pyo3]

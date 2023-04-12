@@ -36,10 +36,11 @@ use tree_sitter::Tree;
 use walkdir::WalkDir;
 use weggli::RegexMap;
 
+use serde::{Deserialize, Serialize};
+use std::error::Error;
 use weggli::parse_search_pattern;
 use weggli::query::QueryTree;
 use weggli::result::QueryResult;
-
 mod cli;
 
 fn main() {
@@ -49,69 +50,6 @@ fn main() {
 
     if args.force_color {
         colored::control::set_override(true)
-    }
-
-    // Keep track of all variables used in the input pattern(s)
-    let mut variables = HashSet::new();
-
-    // Validate all regular expressions
-    let regex_constraints = process_regexes(&args.regexes).unwrap_or_else(|e| {
-        let msg = match e {
-            RegexError::InvalidArg(s) => format!(
-                "'{}' is not a valid argument of the form var=regex",
-                s.red()
-            ),
-            RegexError::InvalidRegex(s) => format!("Regex error {}", s),
-        };
-        eprintln!("{}", msg);
-        std::process::exit(1)
-    });
-
-    // Normalize all patterns and translate them into QueryTrees
-    // We also extract the identifiers at this point
-    // to use them for file filtering later on.
-    // Invalid patterns trigger a process exit in validate_query so
-    // after this point we now that all patterns are valid.
-    // The loop also fills the `variables` set with used variable names.
-    let work: Vec<WorkItem> = args
-        .pattern
-        .iter()
-        .map(|pattern| {
-            match parse_search_pattern(
-                pattern,
-                args.cpp,
-                args.force_query,
-                Some(regex_constraints.clone()),
-            ) {
-                Ok(qt) => {
-                    let identifiers = qt.identifiers();
-                    variables.extend(qt.variables());
-                    WorkItem { qt, identifiers }
-                }
-                Err(qe) => {
-                    eprintln!("{}", qe.message);
-                    if !args.cpp
-                        && parse_search_pattern(
-                            pattern,
-                            true,
-                            args.force_query,
-                            Some(regex_constraints.clone()),
-                        )
-                        .is_ok()
-                    {
-                        eprintln!("{} This query is valid in C++ mode (-X)", "Note:".bold());
-                    }
-                    std::process::exit(1);
-                }
-            }
-        })
-        .collect();
-
-    for v in regex_constraints.variables() {
-        if !variables.contains(v) {
-            eprintln!("'{}' is not a valid query variable", v.red());
-            std::process::exit(1)
-        }
     }
 
     // Verify that the --include and --exclude regexes are valid.
@@ -130,68 +68,170 @@ fn main() {
             .collect()
     };
 
-    let exclude_re = helper_regex(&args.exclude);
-    let include_re = helper_regex(&args.include);
+    for rules in rule_path_seek(args.rule_path.as_path()) {
+        info!("[+] Issue loading: {}", rules.issue.blue());
+        for rule in rules.rules {
+            // Keep track of all variables used in the input pattern(s)
+            let mut variables = HashSet::new();
 
-    // Collect and filter our input file set.
-    let mut files: Vec<PathBuf> = if args.path.to_string_lossy() == "-" {
-        std::io::stdin()
-            .lock()
-            .lines()
-            .filter_map(|l| l.ok())
-            .map(|s| Path::new(&s).to_path_buf())
-            .collect()
-    } else {
-        iter_files(&args.path, args.extensions.clone())
-            .map(|d| d.into_path())
-            .collect()
-    };
+            // Validate all regular expressions
+            let regex_constraints = process_regexes(&rule.regexes).unwrap_or_else(|e| {
+                let msg = match e {
+                    RegexError::InvalidArg(s) => format!(
+                        "'{}' is not a valid argument of the form var=regex",
+                        s.red()
+                    ),
+                    RegexError::InvalidRegex(s) => format!("Regex error {}", s),
+                };
+                eprintln!("{}", msg);
+                std::process::exit(1)
+            });
 
-    if !exclude_re.is_empty() || !include_re.is_empty() {
-        // Filter files based on include and exclude regexes
-        files.retain(|f| {
-            if exclude_re.iter().any(|r| r.is_match(&f.to_string_lossy())) {
-                return false;
+                
+
+            // Normalize all patterns and translate them into QueryTrees
+            // We also extract the identifiers at this point
+            // to use them for file filtering later on.
+            // Invalid patterns trigger a process exit in validate_query so
+            // after this point we now that all patterns are valid.
+            // The loop also fills the `variables` set with used variable names.
+            let work: Vec<WorkItem> = rule
+                .patterns
+                .iter()
+                .map(|pattern| {
+                    match parse_search_pattern(
+                        pattern,
+                        args.cpp,
+                        args.force_query,
+                        Some(regex_constraints.clone()),
+                    ) {
+                        Ok(qt) => {
+                            let identifiers = qt.identifiers();
+                            variables.extend(qt.variables());
+                            WorkItem { qt, identifiers }
+                        }
+                        Err(qe) => {
+                            eprintln!("{}", qe.message);
+                            if !args.cpp
+                                && parse_search_pattern(
+                                    pattern,
+                                    true,
+                                    args.force_query,
+                                    Some(regex_constraints.clone()),
+                                )
+                                .is_ok()
+                            {
+                                eprintln!(
+                                    "{} This query is valid in C++ mode (-X)",
+                                    "Note:".bold()
+                                );
+                            }
+                            std::process::exit(1);
+                        }
+                    }
+                })
+                .collect();
+
+            for v in regex_constraints.variables() {
+                if !variables.contains(v) {
+                    eprintln!("'{}' is not a valid query variable", v.red());
+                    std::process::exit(1)
+                }
             }
-            if include_re.is_empty() {
-                return true;
+
+
+            let exclude_re = helper_regex(&args.exclude);
+            let include_re = helper_regex(&args.include);
+        
+            // Collect and filter our input file set.
+            let mut files: Vec<PathBuf> = if args.code_path.to_string_lossy() == "-" {
+                std::io::stdin()
+                    .lock()
+                    .lines()
+                    .filter_map(|l| l.ok())
+                    .map(|s| Path::new(&s).to_path_buf())
+                    .collect()
+            } else {
+                iter_files(&args.code_path, args.extensions.clone())
+                    .map(|d| d.into_path())
+                    .collect()
+            };
+            if !exclude_re.is_empty() || !include_re.is_empty() {
+                // Filter files based on include and exclude regexes
+                files.retain(|f| {
+                    if exclude_re.iter().any(|r| r.is_match(&f.to_string_lossy())) {
+                        return false;
+                    }
+                    if include_re.is_empty() {
+                        return true;
+                    }
+                    include_re.iter().any(|r| r.is_match(&f.to_string_lossy()))
+                });
             }
-            include_re.iter().any(|r| r.is_match(&f.to_string_lossy()))
-        });
-    }
+        
+            info!("parsing {} files", files.len());
+            if files.is_empty() {
+                eprintln!("{}", String::from("No files to parse. Exiting...").red());
+                std::process::exit(1)
+            }
+        
+            // The main parallelized work pipeline
+            rayon::scope(|s| {
+                // spin up channels for worker communication
+                let (ast_tx, ast_rx) = mpsc::channel();
+                let (results_tx, results_rx) = mpsc::channel();
+        
+                // avoid lifetime issues
+                let cpp = args.cpp;
+                let w = &work;
+                let before = args.before;
+                let after = args.after;
+                let enable_line_numbers = args.enable_line_numbers;
+        
+                let options= Options{
+                    limit : args.limit,
+                    unique : args.unique,
+                    enable_line_numbers : args.enable_line_numbers,
+                    before : args.before,
+                    after : args.after,
+                };
+                // Spawn worker to iterate through files, parse potential matches and forward ASTs
+                s.spawn(move |_| parse_files_worker(files, ast_tx, w, cpp));
+        
+                // Run search queries on ASTs and apply CLI constraints
+                // on the results. For single query executions, we can
+                // directly print any remaining matches. For multi
+                // query runs we forward them to our next worker function
+                s.spawn(move |_| execute_queries_worker(ast_rx, results_tx, w, options));
+        
+                if w.len() > 1 {
+                    s.spawn(move |_| {
+                        multi_query_worker(results_rx, w.len(), before, after, enable_line_numbers)
+                    });
+                }
+            });            
 
-    info!("parsing {} files", files.len());
-    if files.is_empty() {
-        eprintln!("{}", String::from("No files to parse. Exiting...").red());
-        std::process::exit(1)
-    }
 
-    // The main parallelized work pipeline
-    rayon::scope(|s| {
-        // spin up channels for worker communication
-        let (ast_tx, ast_rx) = mpsc::channel();
-        let (results_tx, results_rx) = mpsc::channel();
-
-        // avoid lifetime issues
-        let cpp = args.cpp;
-        let w = &work;
-        let before = args.before;
-        let after = args.after;
-        let enable_line_numbers = args.enable_line_numbers;
-
-        // Spawn worker to iterate through files, parse potential matches and forward ASTs
-        s.spawn(move |_| parse_files_worker(files, ast_tx, w, cpp));
-
-        // Run search queries on ASTs and apply CLI constraints
-        // on the results. For single query executions, we can
-        // directly print any remaining matches. For multi
-        // query runs we forward them to our next worker function
-        s.spawn(move |_| execute_queries_worker(ast_rx, results_tx, w, &args));
-
-        if w.len() > 1 {
-            s.spawn(move |_| multi_query_worker(results_rx, w.len(), before, after, enable_line_numbers));
         }
-    });
+    }
+
+
+
+
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Rules {
+    pub issue: String,
+    pub discription: String,
+    pub rules: Vec<Rule>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Rule {
+    pub reason: String,
+    pub regexes: Vec<String>,
+    pub patterns: Vec<String>,
 }
 
 enum RegexError {
@@ -265,6 +305,40 @@ fn iter_files(path: &Path, extensions: Vec<String>) -> impl Iterator<Item = walk
             true
         })
 }
+
+pub fn rule_path_seek(rule_path: &Path) -> Vec<Rules> {
+    debug!("[+] Rule base directory: {}", rule_path.display());
+    let extensions = vec![String::from("yaml")];
+    let files: Vec<PathBuf> = iter_files(rule_path, extensions.clone())
+        .map(|d| d.into_path())
+        .collect();
+    let mut rules: Vec<Rules> = vec![];
+    for path in files.iter() {
+        let data = read_file(path);
+        rules.push(prase_yaml(data.as_str()));
+    }
+    return rules;
+}
+
+pub fn read_file(path: &Path) -> String {
+    // let c = std::fs::read_to_string(path).unwrap();
+    println!("{}", path.display());
+    let p = |err: &dyn Error| {
+        eprintln!("Error: {}", err);
+        return "".to_string();
+    };
+    match fs::read_to_string(path) {
+        Ok(value) => return value.to_string(),
+        Err(err) => p(&err),
+    }
+}
+
+pub fn prase_yaml(data: &str) -> Rules {
+    let rules: Rules = serde_yaml::from_str(data).unwrap();
+    debug!("{}", rules.issue);
+    return rules;
+}
+
 struct WorkItem {
     qt: QueryTree,
     identifiers: Vec<String>,
@@ -324,6 +398,14 @@ struct ResultsCtx {
     result: weggli::result::QueryResult,
 }
 
+struct Options{
+    pub limit: bool,
+    pub unique: bool,
+    pub enable_line_numbers: bool,
+    pub before: usize,
+    pub after: usize,
+}
+
 /// Fetches parsed ASTs from `receiver`, runs all queries in `work` on them and
 /// filters the results based on the provided regex `constraints` and --unique --limit switches.
 /// For single query runs, the remaining results are directly printed. Otherwise they get forwarded
@@ -332,7 +414,7 @@ fn execute_queries_worker(
     receiver: Receiver<(Arc<String>, Tree, String)>,
     results_tx: Sender<ResultsCtx>,
     work: &[WorkItem],
-    args: &cli::Args,
+    options:Options
 ) {
     receiver.into_iter().par_bridge().for_each_with(
         results_tx,
@@ -350,7 +432,7 @@ fn execute_queries_worker(
 
                     // Enforce --unique
                     let check_unique = |m: &QueryResult| {
-                        if args.unique {
+                        if options.unique {
                             let mut seen = HashSet::new();
                             m.vars
                                 .keys()
@@ -365,7 +447,7 @@ fn execute_queries_worker(
 
                     // Enforce --limit
                     let check_limit = |m: &QueryResult| {
-                        if args.limit {
+                        if options.limit {
                             skip_set.insert(m.start_offset())
                         } else {
                             true
@@ -381,7 +463,12 @@ fn execute_queries_worker(
                                 "{}:{}\n{}",
                                 path.clone().bold(),
                                 line,
-                                m.display(&source, args.before, args.after, args.enable_line_numbers)
+                                m.display(
+                                    &source,
+                                    options.before,
+                                    options.after,
+                                    options.enable_line_numbers
+                                )
                             );
                         } else {
                             results_tx
@@ -412,7 +499,7 @@ fn multi_query_worker(
     num_queries: usize,
     before: usize,
     after: usize,
-    enable_line_numbers: bool
+    enable_line_numbers: bool,
 ) {
     let mut query_results = Vec::with_capacity(num_queries);
     for _ in 0..num_queries {
@@ -453,7 +540,8 @@ fn multi_query_worker(
                 "{}:{}\n{}",
                 r.path.bold(),
                 line,
-                r.result.display(&r.source, before, after, enable_line_numbers)
+                r.result
+                    .display(&r.source, before, after, enable_line_numbers)
             );
         })
     });
