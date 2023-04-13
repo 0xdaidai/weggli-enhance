@@ -1,7 +1,7 @@
 [package]
-name = "weggli"
+name = "weggli-enhance"
 version = "0.2.4"
-authors = ["fwilhelm"]
+authors = ["LordCasser"]
 edition = "2021"
 license = "Apache-2.0"
 description = "weggli is a fast and robust semantic search tool for C and C++ codebases. It is designed to help security researchers identify interesting functionality in large codebases."
@@ -14,7 +14,7 @@ python = ["pyo3"]
 crate-type = ["rlib", "dylib"]
 
 [[bin]]
-name = "weggli"
+name = "weggli-enhance"
 
 [dependencies]
 tree-sitter = "0.20.9"

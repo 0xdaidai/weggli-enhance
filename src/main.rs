@@ -34,13 +34,13 @@ use std::{io::prelude::*, path::PathBuf};
 use thread_local::ThreadLocal;
 use tree_sitter::Tree;
 use walkdir::WalkDir;
-use weggli::RegexMap;
+use weggli_enhance::RegexMap;
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use weggli::parse_search_pattern;
-use weggli::query::QueryTree;
-use weggli::result::QueryResult;
+use weggli_enhance::parse_search_pattern;
+use weggli_enhance::query::QueryTree;
+use weggli_enhance::result::QueryResult;
 mod cli;
 
 fn main() {
@@ -373,7 +373,7 @@ fn parse_files_worker(
                     None
                 } else {
                     let mut parser = tl
-                        .get_or(|| RefCell::new(weggli::get_parser(is_cpp)))
+                        .get_or(|| RefCell::new(weggli_enhance::get_parser(is_cpp)))
                         .borrow_mut();
                     let tree = parser.parse(&source.as_bytes(), None).unwrap();
                     Some((tree, source.to_string()))
@@ -395,7 +395,7 @@ struct ResultsCtx {
     query_index: usize,
     path: String,
     source: std::sync::Arc<String>,
-    result: weggli::result::QueryResult,
+    result: weggli_enhance::result::QueryResult,
 }
 
 struct Options{

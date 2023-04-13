@@ -19,11 +19,11 @@ use std::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn run_query(s: &(tree_sitter::Tree, String), pattern: &str) {
-    let tree = weggli::parse(pattern, false);
+    let tree = weggli_enhance::parse(pattern, false);
 
     let mut c = tree.walk();
     c.goto_first_child();
-    let qt = weggli::builder::build_query_tree(pattern, &mut c, false, None).unwrap();
+    let qt = weggli_enhance::builder::build_query_tree(pattern, &mut c, false, None).unwrap();
 
     let matches = qt.matches(s.0.root_node(), &s.1);
     for m in matches {
@@ -39,7 +39,7 @@ fn read_file(path: &str) -> String {
 fn bench(c: &mut Criterion) {
     let p = |path| {
         let source = read_file(path);
-        (weggli::parse(&source, false), source)
+        (weggli_enhance::parse(&source, false), source)
     };
 
     let cluster = p("./third_party/examples/cluster.c");

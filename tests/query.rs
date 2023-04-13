@@ -15,15 +15,15 @@ limitations under the License.
 */
 
 use simplelog::*;
-use weggli::{builder::build_query_tree, result::QueryResult};
+use weggli_enhance::{builder::build_query_tree, result::QueryResult};
 
 fn parse_and_match_helper(needle: &str, source: &str, cpp: bool) -> Vec<QueryResult> {
     let _ = SimpleLogger::init(LevelFilter::Info, Config::default());
     log::set_max_level(log::LevelFilter::Debug);
-    let tree = weggli::parse(needle, cpp);
+    let tree = weggli_enhance::parse(needle, cpp);
     println!("{}", tree.root_node().to_sexp());
 
-    let source_tree = weggli::parse(source, cpp);
+    let source_tree = weggli_enhance::parse(source, cpp);
 
     println!("{}", source_tree.root_node().to_sexp());
 
@@ -196,7 +196,7 @@ fn exprstmt() {
 #[test]
 fn identifiers() {
     let needle = "{int x = func(bar); xonk(foo);}";
-    let tree = weggli::parse(needle, false);
+    let tree = weggli_enhance::parse(needle, false);
 
     let mut c = tree.walk();
     let qt = build_query_tree(needle, &mut c, false, None).unwrap();
@@ -598,7 +598,7 @@ fn tertiary() {
 
 #[test]
 fn not_regression() {
-    // https://github.com/googleprojectzero/weggli/issues/2
+    // https://github.com/googleprojectzero/weggli_enhance/issues/2
     let needle = "{free($handle); not: $handle= NULL;}";
     let source = r"
     void func()
@@ -632,7 +632,7 @@ fn allow_empty_blocks() {
 
 #[test]
 fn filter_identical_matches() {
-    // https://github.com/googleprojectzero/weggli/issues/3
+    // https://github.com/googleprojectzero/weggli_enhance/issues/3
     let needle = "{if ($x){_;}}";
     let source = r"
     void func(){
@@ -795,7 +795,7 @@ fn test_strict_calls() {
 
 #[test]
 fn subexpression_with_multiple_args() {
-    // https://github.com/googleprojectzero/weggli/issues/14
+    // https://github.com/googleprojectzero/weggli_enhance/issues/14
 
     // An unfortunate effect of our sub expression syntax _($x) is
     // that people might wrongly use it as a wildcard function call
