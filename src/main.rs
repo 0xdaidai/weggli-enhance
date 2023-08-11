@@ -88,7 +88,7 @@ fn main() {
             });
 
                 
-
+            let mut reason = format!("{}:{}", rule.reason,rules.issue);
             // Normalize all patterns and translate them into QueryTrees
             // We also extract the identifiers at this point
             // to use them for file filtering later on.
@@ -98,7 +98,7 @@ fn main() {
             let work: Vec<WorkItem> = rule
                 .patterns
                 .iter()
-                .map(|pattern| {
+                .map( |pattern| {
                     match parse_search_pattern(
                         pattern,
                         args.cpp,
@@ -106,9 +106,10 @@ fn main() {
                         Some(regex_constraints.clone()),
                     ) {
                         Ok(qt) => {
+                            let reason = std::mem::take(&mut reason);
                             let identifiers = qt.identifiers();
                             variables.extend(qt.variables());
-                            WorkItem { qt, identifiers }
+                            WorkItem { qt, identifiers, reason}
                         }
                         Err(qe) => {
                             eprintln!("{}", qe.message);
@@ -214,10 +215,6 @@ fn main() {
 
         }
     }
-
-
-
-
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -342,6 +339,7 @@ pub fn prase_yaml(data: &str) -> Rules {
 struct WorkItem {
     qt: QueryTree,
     identifiers: Vec<String>,
+    reason : String,
 }
 
 /// Iterate over all paths in `files`, parse files that might contain a match for any of the queries
@@ -365,7 +363,7 @@ fn parse_files_worker(
 
                 let source = String::from_utf8_lossy(&c);
 
-                let potential_match = work.iter().any(|WorkItem { qt: _, identifiers }| {
+                let potential_match = work.iter().any(|WorkItem { qt: _, identifiers,reason:_ }| {
                     identifiers.iter().all(|i| source.find(i).is_some())
                 });
 
@@ -422,7 +420,7 @@ fn execute_queries_worker(
             // For each query
             work.iter()
                 .enumerate()
-                .for_each(|(i, WorkItem { qt, identifiers: _ })| {
+                .for_each(|(i, WorkItem { qt, identifiers: _ ,reason})| {
                     // Run query
                     let matches = qt.matches(tree.root_node(), &source);
 
@@ -459,6 +457,8 @@ fn execute_queries_worker(
                         // single query
                         if work.len() == 1 {
                             let line = source[..m.start_offset()].matches('\n').count() + 1;
+                            let fmt_reason = " ".to_string() + &reason + " ";
+                            println!("{}",fmt_reason.bold().on_blue());
                             println!(
                                 "{}:{}\n{}",
                                 path.clone().bold(),
