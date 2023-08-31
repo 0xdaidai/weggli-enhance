@@ -457,8 +457,11 @@ fn execute_queries_worker(
                         // single query
                         if work.len() == 1 {
                             let line = source[..m.start_offset()].matches('\n').count() + 1;
-                            let fmt_reason = " ".to_string() + &reason + " ";
-                            println!("{}",fmt_reason.bold().on_blue());
+                            let tmp: Vec<&str> = reason.split(":").collect();
+                            let fmt_reason = (" ".to_string()+  &tmp[0]+" ").bold().on_blue();
+                            let fmt_issue = (" ".to_string()+  &tmp[1]+" ").bold().on_purple();
+
+                            println!("{} : {}", fmt_reason, fmt_issue);
                             println!(
                                 "{}:{}\n{}",
                                 path.clone().bold(),
