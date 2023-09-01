@@ -24,21 +24,19 @@ use colored::Colorize;
 use tree_sitter::{Node, TreeCursor};
 
 /// Translate a parsed and validated input source (specified by `source` and `cursor`) into a `QueryTree`.
-/// When `is_cpp` is set, C++ specific features are enabled.
+
 pub fn build_query_tree(
     source: &str,
     cursor: &mut TreeCursor,
-    is_cpp: bool,
     regex_constraints: Option<RegexMap>,
 ) -> Result<QueryTree, QueryError> {
-    _build_query_tree(source, cursor, 0, is_cpp, false, false, regex_constraints)
+    _build_query_tree(source, cursor, 0, false, false, regex_constraints)
 }
 
 fn _build_query_tree(
     source: &str,
     c: &mut TreeCursor,
     id: usize,
-    is_cpp: bool,
     is_multi_pattern: bool,
     strict_mode: bool,
     regex_constraints: Option<RegexMap>,
@@ -48,7 +46,6 @@ fn _build_query_tree(
         captures: Vec::new(),
         negations: Vec::new(),
         id,
-        cpp: is_cpp,
         regex_constraints: match regex_constraints {
             Some(r) => r,
             None => RegexMap::new(HashMap::new()),
@@ -128,7 +125,7 @@ fn _build_query_tree(
     debug!("tree_sitter query {}: {}", id, sexp);
 
     Ok(QueryTree::new(
-        crate::ts_query(&sexp, is_cpp)?,
+        crate::ts_query(&sexp)?,
         b.captures,
         variables,
         b.negations,
@@ -192,7 +189,6 @@ struct QueryBuilder {
     captures: Vec<Capture>, // captures such as variables ($x), constants (memcpy) or sub queries
     negations: Vec<NegativeQuery>, // all negative sub queries (not: )
     id: usize,              // a globally unique ID used for caching results see `query.rs`
-    cpp: bool,              // flag to enable C++ support
     regex_constraints: RegexMap,
 }
 
@@ -324,7 +320,6 @@ impl QueryBuilder {
                     &self.query_source,
                     &mut c,
                     self.id,
-                    self.cpp,
                     true,
                     false, // limit strictness to current depth for now
                     Some(self.regex_constraints.clone()),
@@ -495,7 +490,6 @@ impl QueryBuilder {
                 &self.query_source,
                 &mut negated_query.walk(),
                 self.id,
-                self.cpp,
                 false,
                 false, // TODO: should strict mode be supported in NOT queries?
                 Some(self.regex_constraints.clone()),
@@ -527,9 +521,7 @@ impl QueryBuilder {
             if is_num_var(pattern) && parent!="declarator" {
                 "(number_literal)".to_string()
             }
-            else if self.cpp {
-                "[(identifier) (field_expression) (field_identifier) (qualified_identifier) (this)]".to_string()
-            } else {
+            else {
                 "[(identifier) (field_expression) (field_identifier)]".to_string()
             }
         } else {
@@ -580,7 +572,7 @@ impl QueryBuilder {
                 &self.query_source,
                 &mut arg,
                 self.id,
-                self.cpp,
+
                 false,
                 strict_mode,
                 Some(self.regex_constraints.clone()),
@@ -603,14 +595,6 @@ impl QueryBuilder {
 
                 let fs = if strict_mode {
                     format! {"(identifier) {}",capture_str}
-                } else if self.cpp {
-                    format! {"[(field_expression field: (field_identifier){0})
-                    (qualified_identifier name: (identifier){0}) 
-                    (qualified_identifier name: (qualified_identifier (identifier){0})) 
-                    (qualified_identifier name: (qualified_identifier (qualified_identifier (identifier){0}))) 
-                    (qualified_identifier name: (qualified_identifier (qualified_identifier 
-                        (qualified_identifier (identifier){0})))) 
-                    (identifier) {0}]",capture_str}
                 } else {
                     format! {"[(field_expression field: (field_identifier){0})
                     (identifier) {0}]",capture_str}

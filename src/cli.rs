@@ -116,6 +116,13 @@ pub fn parse_arguments() -> Args {
         //         .long_help(help::REGEX),
         // )
         .arg(
+            Arg::with_name("cpp")
+                .short("X")
+                .long("cpp")
+                .takes_value(false)
+                .help("Enable C++ mode."),
+        )
+        .arg(
             Arg::with_name("color")
                 .short("C)")
                 .long("color")

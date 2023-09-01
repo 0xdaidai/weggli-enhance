@@ -101,7 +101,6 @@ fn main() {
                 .map( |pattern| {
                     match parse_search_pattern(
                         pattern,
-                        args.cpp,
                         args.force_query,
                         Some(regex_constraints.clone()),
                     ) {
@@ -113,10 +112,8 @@ fn main() {
                         }
                         Err(qe) => {
                             eprintln!("{}", qe.message);
-                            if !args.cpp
-                                && parse_search_pattern(
+                            if parse_search_pattern(
                                     pattern,
-                                    true,
                                     args.force_query,
                                     Some(regex_constraints.clone()),
                                 )
@@ -183,7 +180,6 @@ fn main() {
                 let (results_tx, results_rx) = mpsc::channel();
         
                 // avoid lifetime issues
-                let cpp = args.cpp;
                 let w = &work;
                 let before = args.before;
                 let after = args.after;
@@ -197,7 +193,7 @@ fn main() {
                     after : args.after,
                 };
                 // Spawn worker to iterate through files, parse potential matches and forward ASTs
-                s.spawn(move |_| parse_files_worker(files, ast_tx, w, cpp));
+                s.spawn(move |_| parse_files_worker(files, ast_tx, w));
         
                 // Run search queries on ASTs and apply CLI constraints
                 // on the results. For single query executions, we can
@@ -348,7 +344,6 @@ fn parse_files_worker(
     files: Vec<PathBuf>,
     sender: Sender<(Arc<String>, Tree, String)>,
     work: &[WorkItem],
-    is_cpp: bool,
 ) {
     let tl = ThreadLocal::new();
 
@@ -371,7 +366,7 @@ fn parse_files_worker(
                     None
                 } else {
                     let mut parser = tl
-                        .get_or(|| RefCell::new(weggli_enhance::get_parser(is_cpp)))
+                        .get_or(|| RefCell::new(weggli_enhance::get_parser()))
                         .borrow_mut();
                     let tree = parser.parse(&source.as_bytes(), None).unwrap();
                     Some((tree, source.to_string()))
