@@ -316,7 +316,7 @@ impl QueryBuilder {
             "compound_statement" if c.node().named_child_count() > 0 => {
                 self.id += 1;
                 let mut c = c.node().walk();
-                let capture = Capture::Subquery(Box::new(_build_query_tree(
+                let capture = Capture::SubMultiQuery(Box::new(_build_query_tree(
                     &self.query_source,
                     &mut c,
                     self.id,
@@ -568,7 +568,7 @@ impl QueryBuilder {
                 return Ok(Some(self.build(&mut arg, depth, strict_mode, parent)?));
             }
             self.id += 1;
-            let capture = Capture::Subquery(Box::new(_build_query_tree(
+            let capture = Capture::SubWildQuery(Box::new(_build_query_tree(
                 &self.query_source,
                 &mut arg,
                 self.id,

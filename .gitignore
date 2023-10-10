@@ -6,3 +6,6 @@ __pycache__
 *.so
 /env/
 /dist/
+.vscode/
+/rules/
+/example/

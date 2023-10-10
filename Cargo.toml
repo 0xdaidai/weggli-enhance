@@ -46,7 +46,3 @@ cc = "1.0.73"
 criterion = {version = "0.3",features = ["html_reports"]}
 assert_cmd = "2.0.0"
 predicates = "1"
-
-[[bench]]
-name = "examples"
-harness = false
