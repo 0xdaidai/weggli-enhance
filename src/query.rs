@@ -81,7 +81,11 @@ impl QueryTree {
                 Capture::Variable(s, _) => {
                     result.insert(s.to_string());
                 }
-                Capture::Subquery(t) => {
+                Capture::SubMultiQuery(t) => {
+                    let sub_vars = t.variables();
+                    result.extend(sub_vars);
+                }
+                Capture::SubWildQuery(t) => {
                     let sub_vars = t.variables();
                     result.extend(sub_vars);
                 }
@@ -103,7 +107,11 @@ impl QueryTree {
         for c in &self.captures {
             match c {
                 Capture::Check(s) => result.push(s.to_string()),
-                Capture::Subquery(t) => {
+                Capture::SubMultiQuery(t) => {
+                    let mut sub_identifiers = t.identifiers();
+                    result.append(&mut sub_identifiers);
+                }
+                Capture::SubWildQuery(t) => {
                     let mut sub_identifiers = t.identifiers();
                     result.append(&mut sub_identifiers);
                 }
@@ -173,7 +181,7 @@ impl QueryTree {
                 let negative_query_matched = self.negations.iter().any(|neg| {
                     // run the negative sub query
                     let negative_results = neg.qt.match_internal(root, source, cache);
-
+                    
                     // check if any of its result are a valid match.
                     negative_results.into_iter().any(|n| {
                         // check if the negative match `m` is consistent with our result
@@ -232,8 +240,8 @@ impl QueryTree {
             };
 
             // TODO: Do we need to store sub queries in captures as well?
-            if !matches!(capture, Capture::Subquery(_)) {
-                r.push(capture_result)
+            if !matches!(capture, Capture::SubMultiQuery(_)) {
+                r.push(capture_result);
             }
 
             match capture {
@@ -246,7 +254,10 @@ impl QueryTree {
                     }
                     vars.insert(s.clone(), r.len() - 1);
                 }
-                Capture::Subquery(t) => {
+                Capture::SubWildQuery(t) => {
+                    subqueries.push((t, c));
+                }
+                Capture::SubMultiQuery(t) => {
                     subqueries.push((t, c));
                 }
                 Capture::Number(i) => {

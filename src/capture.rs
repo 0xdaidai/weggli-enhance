@@ -27,7 +27,9 @@ pub enum Capture {
     Variable(String, Option<(bool, Regex)>),
     Check(String),
     Number(i128),
-    Subquery(Box<crate::query::QueryTree>),
+    SubWildQuery(Box<crate::query::QueryTree>),
+    SubMultiQuery(Box<crate::query::QueryTree>),
+
 }
 
 pub fn add_capture(captures: &mut Vec<Capture>, capture: Capture) -> String {
