@@ -239,7 +239,6 @@ impl QueryTree {
                 capture_idx: c.index,
             };
 
-            // TODO: Do we need to store sub queries in captures as well?
             if !matches!(capture, Capture::SubMultiQuery(_)) {
                 r.push(capture_result);
             }

@@ -115,13 +115,13 @@ pub fn parse_arguments() -> Args {
         //         .help("Enforce that a variable has to (not) match a regex.")
         //         .long_help(help::REGEX),
         // )
-        .arg(
-            Arg::with_name("cpp")
-                .short("X")
-                .long("cpp")
-                .takes_value(false)
-                .help("Enable C++ mode."),
-        )
+        // .arg(
+        //     Arg::with_name("cpp")
+        //         .short("X")
+        //         .long("cpp")
+        //         .takes_value(false)
+        //         .help("Enable C++ mode."),
+        // )
         .arg(
             Arg::with_name("color")
                 .short("C)")

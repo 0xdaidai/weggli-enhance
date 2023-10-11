@@ -199,6 +199,7 @@ impl QueryBuilder {
     }
 
     // Returns true iff `query` is a wildcard function call _(..)
+    // TODO: fix some bugs
     fn is_subexpr_wildcard(&self, query: Node) -> bool {
         if query.kind() != "call_expression" {
             return false;

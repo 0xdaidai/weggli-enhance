@@ -24,16 +24,16 @@ fn main() {
         .flag("-w")
         .compile("tree-sitter-c");
 
-    cc::Build::new()
-        .cpp(true)
-        .include("third_party/grammars/")
-        .file("third_party/grammars/weggli-cpp/src/scanner.cc")
-        .flag("-w")
-        .compile("tree-sitter-cpp-scanner");
+    // cc::Build::new()
+    //     .cpp(true)
+    //     .include("third_party/grammars/")
+    //     .file("third_party/grammars/weggli-cpp/src/scanner.cc")
+    //     .flag("-w")
+    //     .compile("tree-sitter-cpp-scanner");
 
-    cc::Build::new()
-        .include("third_party/grammars/")
-        .file("third_party/grammars/weggli-cpp/src/parser.c")
-        .flag("-w")
-        .compile("tree-sitter-cpp-parser");
+    // cc::Build::new()
+    //     .include("third_party/grammars/")
+    //     .file("third_party/grammars/weggli-cpp/src/parser.c")
+    //     .flag("-w")
+    //     .compile("tree-sitter-cpp-parser");
 }
