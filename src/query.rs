@@ -254,10 +254,16 @@ impl QueryTree {
                     vars.insert(s.clone(), r.len() - 1);
                 }
                 Capture::SubWildQuery(t) => {
+                    // info!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
                     subqueries.push((t, c));
                 }
                 Capture::SubMultiQuery(t) => {
                     subqueries.push((t, c));
+                }
+                Capture::CallExpQuery(len) => {
+                    if c.node.child_count() != *len{
+                        return vec![];
+                    }
                 }
                 Capture::Number(i) => {
                     if let Some(y) = parse_number_literal(&source[c.node.byte_range()]) {

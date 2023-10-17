@@ -15,18 +15,19 @@ limitations under the License.
 */
 use regex::Regex;
 
-/// We use captures as a way to extend tree-sitter's query mechanism.
-/// Variable captures correspond to a weggli variable ($foo) and we enforce
-/// equality of a single variable for all queries in a tree.
-/// Check is used for weggli identifiers such as variable or function names.
-/// Finally, Subquery contains the QueryTree that needs to be executed on
-/// the captured AST node.
+// We use captures as a way to extend tree-sitter's query mechanism.
+// Variable captures correspond to a weggli variable ($foo) and we enforce
+// equality of a single variable for all queries in a tree.
+// Check is used for weggli identifiers such as variable or function names.
+// Finally, Subquery contains the QueryTree that needs to be executed on
+// the captured AST node.
 #[derive(Debug)]
 pub enum Capture {
     Display,
     Variable(String, Option<(bool, Regex)>),
     Check(String),
     Number(i128),
+    CallExpQuery(usize),
     SubWildQuery(Box<crate::query::QueryTree>),
     SubMultiQuery(Box<crate::query::QueryTree>),
 

@@ -19,7 +19,7 @@ use std::collections::{hash_map::Keys, HashMap};
 use colored::Colorize;
 use query::QueryTree;
 use regex::Regex;
-use tree_sitter::{Language, Parser, Query, Tree};
+use tree_sitter::{Language,Parser, Query, Tree};
 
 
 #[macro_use]
@@ -50,8 +50,34 @@ pub fn parse(source: &str) -> Tree {
     let mut parser = get_parser();
     parser.parse(source, None).unwrap()
 }
+pub fn pattern_parse(source: &str) -> Tree {
+    let mut parser = get_pattern_parser();
+    parser.parse(source, None).unwrap()
+}
 
-pub fn get_parser() -> Parser {
+// pub fn get_parser() -> Parser {
+//     let language =  unsafe { tree_sitter_c() };
+//
+//
+//     let mut parser  = Parser::new();
+//     if let Err(e) = parser.set_language(language) {
+//         eprintln!("{}", e);
+//         panic!();
+//     }
+//     parser
+// }
+
+
+
+pub fn get_parser() -> Parser{
+    let mut  parser = Parser::new();
+    if let Err(e) = parser.set_language(tree_sitter_c::language()) {
+        eprintln!("{}", e);
+        panic!();
+    }
+    parser
+}
+pub fn get_pattern_parser() -> Parser{
     let language =  unsafe { tree_sitter_c() };
 
 
@@ -65,7 +91,8 @@ pub fn get_parser() -> Parser {
 
 // Internal helper function to create a new tree-sitter query.
 fn ts_query(sexpr: &str) -> Result<tree_sitter::Query, QueryError> {
-    let language =  unsafe { tree_sitter_c() };
+    // let language =  unsafe { tree_sitter_c() };
+    let language =   tree_sitter_c::language();
 
     match Query::new(language, sexpr) {
         Ok(q) => Ok(q),
@@ -110,7 +137,7 @@ pub fn parse_search_pattern(
     force_query: bool,
     regex_constraints: Option<RegexMap>,
 ) -> Result<QueryTree, QueryError> {
-    let mut tree = parse(pattern);
+    let mut tree = pattern_parse(pattern);
     let mut p = pattern;
 
     let temp_pattern;
@@ -119,7 +146,7 @@ pub fn parse_search_pattern(
     // weggli 'memcpy(a,b,size)' should work.
     if tree.root_node().has_error() && !pattern.ends_with(';') {
         temp_pattern = format!("{};", &p);
-        let fixed_tree = parse(&temp_pattern);
+        let fixed_tree = pattern_parse(&temp_pattern);
         if !fixed_tree.root_node().has_error() {
             info!("normalizing query: add missing ;");
             tree = fixed_tree;
@@ -136,7 +163,7 @@ pub fn parse_search_pattern(
         if let Some(n) = c {
             if !VALID_NODE_KINDS.contains(&n.kind()) {
                 temp_pattern2 = format!("{{{}}}", &p);
-                let fixed_tree = parse(&temp_pattern2);
+                let fixed_tree = pattern_parse(&temp_pattern2);
                 if !fixed_tree.root_node().has_error() {
                     info!("normalizing query: add {}", "{}");
                     tree = fixed_tree;

@@ -22,6 +22,7 @@ use crate::util::parse_number_literal;
 use crate::{QueryError, RegexMap};
 use colored::Colorize;
 use tree_sitter::{Node, TreeCursor};
+// use tree_sitter::QueryErrorKind::Capture;
 
 /// Translate a parsed and validated input source (specified by `source` and `cursor`) into a `QueryTree`.
 
@@ -112,7 +113,6 @@ fn _build_query_tree(
             let mut cursor = child.walk();
 
             let child_sexp = b.build(&mut cursor, 0, strict_mode, kind)?;
-
             let captures = &process_captures(&b.captures, before, &mut variables);
 
             if !child_sexp.is_empty() {
@@ -198,7 +198,7 @@ impl QueryBuilder {
         &self.query_source[n.byte_range()]
     }
 
-    // Returns true iff `query` is a wildcard function call _(..)
+    // Returns true if `query` is a wildcard function call _(..)
     // TODO: fix some bugs
     fn is_subexpr_wildcard(&self, query: Node) -> bool {
         if query.kind() != "call_expression" {
@@ -225,7 +225,7 @@ impl QueryBuilder {
 
     // Returns true if `n` is a commutative binary expression
     fn is_commutative_binary_exp(&self, n: Node) -> bool {
-        assert!(n.kind() == "binary_expression");
+        assert_eq!(n.kind(), "binary_expression");
 
         if let Some(op) = n.child(1) {
             ["+", "*", "&", "|", "==", "!="].contains(&op.kind())
@@ -474,7 +474,14 @@ impl QueryBuilder {
         c.goto_parent();
 
         debug!("generated query: {}", result);
-        Ok(result + ")")
+        if kind == "argument_list" {
+            // info!("list {}",result);
+            let capture = Capture::CallExpQuery(c.node().child_count());
+            Ok(result + ") @"+ &add_capture(&mut self.captures, capture))
+        }else{
+            Ok(result + ")")
+        }
+
     }
 
     // Create a negative query matching the statement after
@@ -573,7 +580,6 @@ impl QueryBuilder {
                 &self.query_source,
                 &mut arg,
                 self.id,
-
                 false,
                 strict_mode,
                 Some(self.regex_constraints.clone()),
