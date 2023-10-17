@@ -275,7 +275,7 @@ mod help {
  
  Use -h for short descriptions and --help for more details.
  
- Homepage: https://github.com/LordCasser/weggli";
+ Homepage: https://github.com/LordCasser/weggli-enhance";
 
     pub const TEMPLATE: &str = "\
  {about}
