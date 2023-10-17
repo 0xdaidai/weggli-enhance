@@ -935,7 +935,7 @@ dependencies = [
 
 [[package]]
 name = "weggli-enhance"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "assert_cmd",
  "cc",
