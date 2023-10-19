@@ -6,7 +6,7 @@
 
 - **Feature enhance:** support yaml multi-pattern input @[issue 76](https://github.com/weggli-rs/weggli/issues/76)
 - **Accuracy enhance:** corrent fix some wild-query bugs
-- **Cross Platform: ** support Win\Mac\Linux
+- **Cross Platform:** support Win\Mac\Linux
 
 I hope to continue **enhance** weggli. And this project will remain active for a long time to come.
 
