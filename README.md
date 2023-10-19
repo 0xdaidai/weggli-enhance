@@ -1,6 +1,6 @@
 # weggli-enhance
 
-![weggli-enhance example](./README.assets/example.png)
+![weggli-enhance example](example.png)
 
 ## Why weggli-enhance
 
