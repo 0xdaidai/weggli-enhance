@@ -36,10 +36,14 @@ pub struct Args {
     pub enable_line_numbers: bool
 }
 
+
+const NAME: &str = "weggli-enhance";
+const VERSION: &str = "v0.3.1";
+
 /// Parse command arguments and return them inside the Args structure.
 /// The clap crate handles program exit and error messages for invalid arguments.
 pub fn parse_arguments() -> Args {
-    let matches = App::new("weggli")
+    let matches = App::new(NAME.to_owned()+" "+VERSION)
         .about(help::ABOUT)
         .setting(clap::AppSettings::ArgRequiredElseHelp)
         .setting(clap::AppSettings::UnifiedHelpMessage)
