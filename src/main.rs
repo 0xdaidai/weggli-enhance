@@ -75,6 +75,7 @@ fn main() {
 
     let mut descriptors = vec![];
     let mut rules_index = 0;
+    let mut results = vec![];
     for rules in rule_path_seek(args.rule_path.as_path()) {
         info!("[+] Issue loading: {}", rules.issue.blue());
         descriptors.push(
@@ -89,7 +90,7 @@ fn main() {
         rules_index = rules_index + 1;
 
         let mut works: Vec<WorkItem> = vec![];
-        let mut results = vec![];
+
         for rule in rules.rules {
             // Keep track of all variables used in the input pattern(s)
             let mut variables = HashSet::new();
@@ -217,48 +218,47 @@ fn main() {
                 results.extend(results_rx.iter());
             });
         }
-
-
-        // deal with multiple worker's results
-        match args.output_path {
-            Some(ref path) => {
-                println!("{}", "output branch");
-                let mut tmp_path = PathBuf::from(path);
-                if tmp_path.is_dir() {
-                    if tmp_path.is_absolute() {
-                        tmp_path.push("results.sarif");
-                    } else {
-                        tmp_path = std::env::current_dir()
-                            .unwrap()
-                            .join(path)
-                            .join("results.sarif")
-                    }
+        
+    }
+    // deal with multiple worker's results
+    match args.output_path {
+        Some(ref path) => {
+            println!("{}", "output branch");
+            let mut tmp_path = PathBuf::from(path);
+            if tmp_path.is_dir() {
+                if tmp_path.is_absolute() {
+                    tmp_path.push("results.sarif");
                 } else {
-                    if !tmp_path.is_absolute() {
-                        tmp_path = std::env::current_dir().unwrap().join(path)
-                    }
+                    tmp_path = std::env::current_dir()
+                        .unwrap()
+                        .join(path)
+                        .join("results.sarif")
                 }
-                results_collector(
-                    results,
-                    descriptors.clone(),
-                    args.before,
-                    args.after,
-                    true,
-                    Some(tmp_path),
-                    args.enable_line_numbers,
-                );
+            } else {
+                if !tmp_path.is_absolute() {
+                    tmp_path = std::env::current_dir().unwrap().join(path)
+                }
             }
-            None => {
-                results_collector(
-                    results,
-                    descriptors.clone(),
-                    args.before,
-                    args.after,
-                    false,
-                    None,
-                    args.enable_line_numbers,
-                );
-            }
+            results_collector(
+                results,
+                descriptors.clone(),
+                args.before,
+                args.after,
+                true,
+                Some(tmp_path),
+                args.enable_line_numbers,
+            );
+        }
+        None => {
+            results_collector(
+                results,
+                descriptors.clone(),
+                args.before,
+                args.after,
+                false,
+                None,
+                args.enable_line_numbers,
+            );
         }
     }
 }
@@ -525,26 +525,26 @@ fn execute_queries_worker(
                     // Print match or forward it if we are in a multi query context
                     let process_match = |m: QueryResult| {
                         // single query
-                        if work.len() == 1 {
-                            let line = source[..m.start_offset()].matches('\n').count() + 1;
-                            let fmt_reason =
-                                (" ".to_string() + &reason.clone() + " ").bold().on_blue();
-                            let fmt_issue =
-                                (" ".to_string() + &issue.clone() + " ").bold().on_purple();
-
-                            println!("{} : {}", fmt_reason, fmt_issue);
-                            println!(
-                                "{}:{}\n{}",
-                                path.clone().bold(),
-                                line,
-                                m.display(
-                                    &source,
-                                    options.before,
-                                    options.after,
-                                    options.enable_line_numbers
-                                )
-                            );
-                        } else {
+                        // if work.len() == 1 {
+                        //     let line = source[..m.start_offset()].matches('\n').count() + 1;
+                        //     let fmt_reason =
+                        //         (" ".to_string() + &reason.clone() + " ").bold().on_blue();
+                        //     let fmt_issue =
+                        //         (" ".to_string() + &issue.clone() + " ").bold().on_purple();
+                        //
+                        //     println!("{} : {}", fmt_reason, fmt_issue);
+                        //     println!(
+                        //         "{}:{}\n{}",
+                        //         path.clone().bold(),
+                        //         line,
+                        //         m.display(
+                        //             &source,
+                        //             options.before,
+                        //             options.after,
+                        //             options.enable_line_numbers
+                        //         )
+                        //     );
+                        // } else {
                             results_tx
                                 .send(ResultsCtx {
                                     query_index: i,
@@ -556,7 +556,7 @@ fn execute_queries_worker(
                                 })
                                 .unwrap();
                             // println!("{}", log.to_string().bold().on_red());
-                        }
+                        // }
                     };
 
                     matches
@@ -698,7 +698,7 @@ fn results_collector(
             counter = counter + 1;
         }
 
-        
+
 
         let sarif_struct = sarif::SarifBuilder::default()
             .schema("https://json.schemastore.org/sarif-2.1.0")
