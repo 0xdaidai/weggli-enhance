@@ -53,11 +53,6 @@ pub fn parse_number_literal(input: &str) -> Option<i128> {
     }
 }
 
-
-
-
-
-
 #[test]
 fn test_parse_number_literal() {
     assert_eq!(parse_number_literal("10"), Some(10));

@@ -181,7 +181,7 @@ impl QueryTree {
                 let negative_query_matched = self.negations.iter().any(|neg| {
                     // run the negative sub query
                     let negative_results = neg.qt.match_internal(root, source, cache);
-                    
+
                     // check if any of its result are a valid match.
                     negative_results.into_iter().any(|n| {
                         // check if the negative match `m` is consistent with our result
@@ -261,7 +261,7 @@ impl QueryTree {
                     subqueries.push((t, c));
                 }
                 Capture::CallExpQuery(len) => {
-                    if c.node.child_count() != *len{
+                    if c.node.child_count() != *len {
                         return vec![];
                     }
                 }

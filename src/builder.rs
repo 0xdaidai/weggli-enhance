@@ -477,11 +477,10 @@ impl QueryBuilder {
         if kind == "argument_list" {
             // info!("list {}",result);
             let capture = Capture::CallExpQuery(c.node().child_count());
-            Ok(result + ") @"+ &add_capture(&mut self.captures, capture))
-        }else{
+            Ok(result + ") @" + &add_capture(&mut self.captures, capture))
+        } else {
             Ok(result + ")")
         }
-
     }
 
     // Create a negative query matching the statement after
@@ -526,10 +525,9 @@ impl QueryBuilder {
         let mut result = if kind == "type_identifier" {
             "[ (type_identifier) (sized_type_specifier) (primitive_type)]".to_string()
         } else if kind == "identifier" && pattern.starts_with('$') {
-            if is_num_var(pattern) && parent!="declarator" {
+            if is_num_var(pattern) && parent != "declarator" {
                 "(number_literal)".to_string()
-            }
-            else {
+            } else {
                 "[(identifier) (field_expression) (field_identifier)]".to_string()
             }
         } else {

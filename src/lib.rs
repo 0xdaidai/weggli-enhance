@@ -19,8 +19,7 @@ use std::collections::{hash_map::Keys, HashMap};
 use colored::Colorize;
 use query::QueryTree;
 use regex::Regex;
-use tree_sitter::{Language,Parser, Query, Tree};
-
+use tree_sitter::{Language, Parser, Query, Tree};
 
 #[macro_use]
 extern crate log;
@@ -35,7 +34,6 @@ pub mod result;
 extern "C" {
     fn tree_sitter_c() -> Language;
 }
-
 
 #[derive(Debug, Clone)]
 pub struct QueryError {
@@ -67,21 +65,18 @@ pub fn pattern_parse(source: &str) -> Tree {
 //     parser
 // }
 
-
-
-pub fn get_parser() -> Parser{
-    let mut  parser = Parser::new();
+pub fn get_parser() -> Parser {
+    let mut parser = Parser::new();
     if let Err(e) = parser.set_language(tree_sitter_c::language()) {
         eprintln!("{}", e);
         panic!();
     }
     parser
 }
-pub fn get_pattern_parser() -> Parser{
-    let language =  unsafe { tree_sitter_c() };
+pub fn get_pattern_parser() -> Parser {
+    let language = unsafe { tree_sitter_c() };
 
-
-    let mut parser  = Parser::new();
+    let mut parser = Parser::new();
     if let Err(e) = parser.set_language(language) {
         eprintln!("{}", e);
         panic!();
@@ -92,7 +87,7 @@ pub fn get_pattern_parser() -> Parser{
 // Internal helper function to create a new tree-sitter query.
 fn ts_query(sexpr: &str) -> Result<tree_sitter::Query, QueryError> {
     // let language =  unsafe { tree_sitter_c() };
-    let language =   tree_sitter_c::language();
+    let language = tree_sitter_c::language();
 
     match Query::new(language, sexpr) {
         Ok(q) => Ok(q),
@@ -125,8 +120,6 @@ impl RegexMap {
         }
     }
 }
-
-
 
 /// Translate the search pattern in `pattern` into a weggli QueryTree.
 /// `is_cpp` enables C++ mode. `force_query` can be used to allow queries with syntax errors.

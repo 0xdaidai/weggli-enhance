@@ -39,7 +39,7 @@ pub struct QueryResult {
 /// index (see QueryResult::get_capture_result)
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CaptureResult {
-    pub range: std::ops::Range<usize>,
+    pub range: Range<usize>,
     pub query_id: usize,
     pub capture_idx: u32,
 }
@@ -310,11 +310,7 @@ impl<'a> DisplayHelper<'a> {
             skipped = false;
         }
 
-        let t = if skipped {
-            6
-        } else {
-            1
-        };
+        let t = if skipped { 6 } else { 1 };
 
         result.truncate(result.len() - t);
 

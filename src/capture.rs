@@ -30,7 +30,6 @@ pub enum Capture {
     CallExpQuery(usize),
     SubWildQuery(Box<crate::query::QueryTree>),
     SubMultiQuery(Box<crate::query::QueryTree>),
-
 }
 
 pub fn add_capture(captures: &mut Vec<Capture>, capture: Capture) -> String {
