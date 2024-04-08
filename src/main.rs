@@ -28,11 +28,10 @@ use rayon::Scope;
 use regex::Regex;
 use std::cell::RefCell;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{mpsc, Arc};
 use std::{collections::HashMap, path::Path, vec};
 use std::{collections::HashSet, fs};
 use std::{io::prelude::*, path::PathBuf};
-use std::any::Any;
 use thread_local::ThreadLocal;
 use tree_sitter::Tree;
 use walkdir::WalkDir;
@@ -46,7 +45,7 @@ use weggli_enhance::query::QueryTree;
 use weggli_enhance::result::QueryResult;
 mod cli;
 use serde_sarif::sarif;
-use serde_sarif::sarif::{PropertyBag, PropertyBagBuilder, ReportingConfiguration, ReportingDescriptor, Sarif};
+use serde_sarif::sarif::{ReportingDescriptor};
 
 fn main() {
     reset_signal_pipe_handler();
@@ -74,20 +73,24 @@ fn main() {
     };
 
     let mut descriptors = vec![];
-    let mut rules_index = 0;
     let mut results = vec![];
     for rules in rule_path_seek(args.rule_path.as_path()) {
         info!("[+] Issue loading: {}", rules.issue.blue());
+        let level = match rules.level {
+            Some(Level::Error) => "error",
+            Some(Level::Warning)  => "warning",
+            Some(Level::Note)  => "note",
+            None => "none",
+        };
         descriptors.push(
             sarif::ReportingDescriptorBuilder::default()
                 .name(rules.issue.clone())
-                .id(rules_index.to_string())
-                .default_configuration(sarif::ReportingConfigurationBuilder::default().enabled(true).level("error").build().unwrap())
+                .id(rules.issue.clone())
+                .default_configuration(sarif::ReportingConfigurationBuilder::default().enabled(true).level(level).build().unwrap())
                 .build()
                 .unwrap(),
         );
 
-        rules_index = rules_index + 1;
 
         let mut works: Vec<WorkItem> = vec![];
 
@@ -218,7 +221,7 @@ fn main() {
                 results.extend(results_rx.iter());
             });
         }
-        
+
     }
     // deal with multiple worker's results
     match args.output_path {
@@ -267,7 +270,16 @@ fn main() {
 pub struct Rules {
     pub issue: String,
     pub description: String,
+    pub level: Option<Level>,
     pub rules: Vec<Rule>,
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum Level {
+    Error,
+    Warning,
+    Note,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
