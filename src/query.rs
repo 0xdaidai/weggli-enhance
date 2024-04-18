@@ -264,7 +264,7 @@ impl QueryTree {
                     vars.insert(s.clone(), r.len() - 1);
                 }
                 Capture::SubWildQuery(t) => {
-                    println!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
+                    // println!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
                     subqueries.push((t, c));
                 }
                 Capture::SubMultiQuery(t) => {
