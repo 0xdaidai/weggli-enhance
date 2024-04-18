@@ -25,7 +25,7 @@ use colored::Colorize;
 use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 use rayon::Scope;
-use regex::Regex;
+use fancy_regex::Regex;
 use std::cell::RefCell;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc};
@@ -176,13 +176,13 @@ fn main() {
             if !exclude_re.is_empty() || !include_re.is_empty() {
                 // Filter files based on include and exclude regexes
                 files.retain(|f| {
-                    if exclude_re.iter().any(|r| r.is_match(&f.to_string_lossy())) {
+                    if exclude_re.iter().any(|r| r.is_match(&f.to_string_lossy()).unwrap()) {
                         return false;
                     }
                     if include_re.is_empty() {
                         return true;
                     }
-                    include_re.iter().any(|r| r.is_match(&f.to_string_lossy()))
+                    include_re.iter().any(|r| r.is_match(&f.to_string_lossy()).unwrap())
                 });
             }
 
@@ -291,11 +291,11 @@ pub struct Rule {
 
 enum RegexError {
     InvalidArg(String),
-    InvalidRegex(regex::Error),
+    InvalidRegex(fancy_regex::Error),
 }
 
-impl From<regex::Error> for RegexError {
-    fn from(err: regex::Error) -> RegexError {
+impl From<fancy_regex::Error> for RegexError {
+    fn from(err: fancy_regex::Error) -> RegexError {
         RegexError::InvalidRegex(err)
     }
 }

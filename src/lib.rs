@@ -18,7 +18,7 @@ use std::collections::{hash_map::Keys, HashMap};
 
 use colored::Colorize;
 use query::QueryTree;
-use regex::Regex;
+use fancy_regex::Regex;
 use tree_sitter::{Language, Parser, Query, Tree};
 
 #[macro_use]

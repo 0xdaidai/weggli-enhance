@@ -515,6 +515,8 @@ impl QueryBuilder {
         let pattern = self.get_text(&c.node());
         let kind = c.node().kind();
 
+        println!("{}",pattern);
+
         let is_num_var =
             |p: &str| -> bool { p.starts_with('$') && p.chars().skip(1).all(|c| c.is_numeric()) };
 

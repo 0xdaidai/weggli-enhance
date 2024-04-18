@@ -217,7 +217,7 @@ impl QueryTree {
 
     // Process a single tree-sitter match and return all query results
     // This function is responsible for running all subqueries,
-    // and veriyfing that negations don't match.
+    // and verifying that negations don't match.
     fn process_match(
         &self,
         cache: &mut Cache,
@@ -246,18 +246,29 @@ impl QueryTree {
             match capture {
                 Capture::Variable(s, regex_constraint) => {
                     if let Some((negative, regex)) = regex_constraint {
-                        let m = regex.is_match(&source[c.node.byte_range()]);
-                        if (m && *negative) || (!m && !*negative) {
-                            return vec![];
+                        match regex.is_match(&source[c.node.byte_range()]) {
+                            Ok(m) => {
+                                if (m && *negative) || (!m && !*negative) {
+                                    return vec![];
+                                }
+                            }
+                            Err(e) => {
+                                panic!("regex error:\n{}",e)
+                            }
                         }
+
+                        // if (m && *negative) || (!m && !*negative) {
+                        //     return vec![];
+                        // }
                     }
                     vars.insert(s.clone(), r.len() - 1);
                 }
                 Capture::SubWildQuery(t) => {
-                    // info!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
+                    println!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
                     subqueries.push((t, c));
                 }
                 Capture::SubMultiQuery(t) => {
+                    // println!("c:{}|{},t: {}",c.node.kind(),c.node.child_count(),t.captures.len());
                     subqueries.push((t, c));
                 }
                 Capture::CallExpQuery(len) => {

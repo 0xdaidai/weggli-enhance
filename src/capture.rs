@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-use regex::Regex;
+use fancy_regex::Regex;
 
 // We use captures as a way to extend tree-sitter's query mechanism.
 // Variable captures correspond to a weggli variable ($foo) and we enforce
