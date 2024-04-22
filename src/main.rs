@@ -226,7 +226,7 @@ fn main() {
     // deal with multiple worker's results
     match args.output_path {
         Some(ref path) => {
-            println!("{}", "output branch");
+            // println!("{}", "output branch");
             let mut tmp_path = PathBuf::from(path);
             if tmp_path.is_dir() {
                 if tmp_path.is_absolute() {
@@ -620,8 +620,14 @@ fn results_collector(
         let mut prints = Vec::new();
         results.into_iter().for_each(|r| {
             let line = r.source[..r.result.start_offset()].matches('\n').count() + 1;
+            
+            let fmt_reason =
+                (" ".to_string() + &r.reason.clone() + " ").bold().on_blue();
+            let fmt_issue =
+                (" ".to_string() + &r.issue.clone() + " ").bold().on_purple();
             prints.push(format!(
-                "{}:{}\n{}",
+                "{} : {}\n{}:{}\n{}",
+                fmt_reason, fmt_issue,
                 r.path.bold(),
                 line,
                 r.result
