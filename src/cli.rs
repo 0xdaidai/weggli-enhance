@@ -36,7 +36,7 @@ pub struct Args {
 }
 
 const NAME: &str = "weggli-enhance";
-const VERSION: &str = "v0.3.1";
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Parse command arguments and return them inside the Args structure.
 /// The clap crate handles program exit and error messages for invalid arguments.
