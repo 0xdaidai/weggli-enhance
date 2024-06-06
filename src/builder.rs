@@ -47,10 +47,7 @@ fn _build_query_tree(
         captures: Vec::new(),
         negations: Vec::new(),
         id,
-        regex_constraints: match regex_constraints {
-            Some(r) => r,
-            None => RegexMap::new(HashMap::new()),
-        },
+        regex_constraints: regex_constraints.unwrap_or_else(|| RegexMap::new(HashMap::new())),
     };
 
     // Skip the root node if it's a translation_unit.
@@ -64,8 +61,8 @@ fn _build_query_tree(
     let mut variables = HashSet::new();
 
     let sexp = if !is_multi_pattern {
-        // We want to wrap queries into a function_definition so we can easily
-        // extract the function that contains a match. Of course we should not do that
+        // We want to wrap queries into a function_definition, so we can easily
+        // extract the function that contains a match. Of course, we should not do that
         // if the user specifies a function_definition as part of the query.
         let needs_anchor = c.node().kind() == "compound_statement" && id == 0;
         debug!("query needs anchor: {}", needs_anchor);
@@ -96,7 +93,7 @@ fn _build_query_tree(
     } else {
         // When building a QueryTree for a compound statement, we create a tree-sitter
         // query with multiple root patterns for efficient searching.
-        // This code is only executed when creating sub queries so we can skip
+        // This code is only executed when creating sub queries, so we can skip
         // the whole anchoring logic needed for the single pattern case.
 
         assert!(c.goto_first_child());
@@ -136,8 +133,8 @@ fn _build_query_tree(
 /// Iterates through `captures` starting at `offset` and returns the necessary query predicates as a string.
 /// In addition, all captured variables are added to the `variables` set.
 ///
-/// For constant captures (such as function or variable names), `process_captures` creates a equality predicate
-/// (#eq @0 "memcpy"). For variables, we enforce equality between two occurences of the same variable (#eq @0 @1)
+/// For constant captures (such as function or variable names), `process_captures` creates an equality predicate
+/// (#eq @0 "memcpy"). For variables, we enforce equality between two occurrences of the same variable (#eq @0 @1)
 fn process_captures(
     captures: &[Capture],
     offset: usize,
@@ -155,7 +152,7 @@ fn process_captures(
         match c {
             Capture::Display => (),
             Capture::Check(s) => {
-                sexp += &format!(r#"(#eq? @{} "{}")"#, (i + offset), s);
+                sexp += &format!(r#"(#eq? @{} "{}")"#, i + offset, s);
             }
             Capture::Variable(var, _) => {
                 vars.entry(var.clone())
@@ -194,7 +191,7 @@ struct QueryBuilder {
 
 impl QueryBuilder {
     // Map from an AST node to its input source
-    fn get_text(&self, n: &tree_sitter::Node) -> &str {
+    fn get_text(&self, n: &Node) -> &str {
         &self.query_source[n.byte_range()]
     }
 
@@ -214,7 +211,7 @@ impl QueryBuilder {
 
     // Returns true if `n` is a comparison binary expression
     fn is_comparison_binary_exp(&self, n: Node) -> bool {
-        assert!(n.kind() == "binary_expression");
+        assert_eq!(n.kind(), "binary_expression");
 
         if let Some(op) = n.child(1) {
             [">", "<", "<=", ">="].contains(&op.kind())
@@ -306,10 +303,10 @@ impl QueryBuilder {
                     // filtered out by _build_query_tree
                     return Ok("".to_string());
                 } else if self.get_text(&label).to_uppercase() == "STRICT" {
-                    if let Some(child) = c.node().named_child(1) {
-                        return self.build(&mut child.walk(), depth, true, kind);
+                    return if let Some(child) = c.node().named_child(1) {
+                        self.build(&mut child.walk(), depth, true, kind)
                     } else {
-                        return Ok("".to_string());
+                        Ok("".to_string())
                     }
                 }
             }
@@ -566,8 +563,8 @@ impl QueryBuilder {
             if copy.goto_next_sibling() {
                 warn! {"sub expression '{}' with multiple arguments is not supported.
                 Do you want to match on a function call '$foo()' instead?",
-                self.get_text(&c.node()).to_string().red()};
-                warn! {"converting to function call..."};
+                self.get_text(&c.node()).to_string().red()}
+                warn! {"converting to function call..."}
                 return Ok(None);
             }
 

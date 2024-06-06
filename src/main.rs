@@ -35,11 +35,11 @@ use std::{io::prelude::*, path::PathBuf};
 use thread_local::ThreadLocal;
 use tree_sitter::Tree;
 use walkdir::WalkDir;
-use weggli_enhance::RegexMap;
-
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
+
+use weggli_enhance::RegexMap;
 use weggli_enhance::parse_search_pattern;
 use weggli_enhance::query::QueryTree;
 use weggli_enhance::result::QueryResult;
@@ -204,9 +204,6 @@ fn main() {
                 let options = Options {
                     limit: args.limit,
                     unique: args.unique,
-                    enable_line_numbers: args.enable_line_numbers,
-                    before: args.before,
-                    after: args.after,
                 };
                 // Spawn worker to iterate through files, parse potential matches and forward ASTs
                 s.spawn(move |_: &Scope<'_>| parse_files_worker(files, ast_tx, w));
@@ -245,22 +242,16 @@ fn main() {
             results_collector(
                 results,
                 descriptors.clone(),
-                args.before,
-                args.after,
                 true,
                 Some(tmp_path),
-                args.enable_line_numbers,
             );
         }
         None => {
             results_collector(
                 results,
                 descriptors.clone(),
-                args.before,
-                args.after,
                 false,
                 None,
-                args.enable_line_numbers,
             );
         }
     }
@@ -370,7 +361,7 @@ pub fn rule_path_seek(rule_path: &Path) -> Vec<Rules> {
     let mut rules: Vec<Rules> = vec![];
     for path in files.iter() {
         let data = read_file(path);
-        rules.push(prase_yaml(data.as_str()));
+        rules.push(parse_yaml(data.as_str()));
     }
     return rules;
 }
@@ -388,8 +379,8 @@ pub fn read_file(path: &Path) -> String {
     }
 }
 
-pub fn prase_yaml(data: &str) -> Rules {
-    let rules: Rules = serde_yaml::from_str(data).unwrap();
+pub fn parse_yaml(data: &str) -> Rules {
+    let rules: Rules = serde_yaml::from_str(data).expect("parsing yaml error, check your rule");
     debug!("{}", rules.issue);
     return rules;
 }
@@ -474,14 +465,11 @@ struct OutputResults {
 struct Options {
     pub limit: bool,
     pub unique: bool,
-    pub enable_line_numbers: bool,
-    pub before: usize,
-    pub after: usize,
 }
 
 /// Fetches parsed ASTs from `receiver`, runs all queries in `work` on them and
 /// filters the results based on the provided regex `constraints` and --unique --limit switches.
-/// For single query runs, the remaining results are directly printed. Otherwise they get forwarded
+/// For single query runs, the remaining results are directly printed. Otherwise, they get forwarded
 /// to `multi_query_worker` through the `results_tx` channel.
 fn execute_queries_worker(
     receiver: Receiver<(Arc<String>, Tree, String)>,
@@ -587,11 +575,8 @@ fn execute_queries_worker(
 fn results_collector(
     mut results: Vec<ResultsCtx>,
     descriptor: Vec<ReportingDescriptor>,
-    before: usize,
-    after: usize,
     enable_sarif: bool,
     sarif_path: Option<PathBuf>,
-    enable_line_numbers: bool,
 ) {
 
 
@@ -631,7 +616,7 @@ fn results_collector(
                 r.path.bold(),
                 line,
                 r.result
-                    .display(&r.source, before, after, enable_line_numbers)
+                    .display(&r.source, 5, 5, true)
             ));
             counter = counter + 1;
         });
@@ -667,7 +652,7 @@ fn results_collector(
         });
 
         let mut unique_results = Vec::new();
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = HashSet::new();
 
         for result in output_results {
             if seen.insert(result.clone()) {
@@ -692,7 +677,7 @@ fn results_collector(
                 .build()
                 .unwrap();
             let sarif_region = sarif::RegionBuilder::default()
-                .start_line(result.start_line as i64)
+                .start_line(result.start_line)
                 .build()
                 .unwrap();
             let sarif_physical_location = sarif::PhysicalLocationBuilder::default()

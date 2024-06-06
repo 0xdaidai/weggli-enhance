@@ -1,6 +1,6 @@
 [package]
 name = "weggli-enhance"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["LordCasser"]
 edition = "2021"
 license = "Apache-2.0"
@@ -10,21 +10,21 @@ description = "weggli is a fast and robust semantic search tool for C and C++ co
 name = "weggli-enhance"
 
 [dependencies]
-tree-sitter = "0.20.10"
-tree-sitter-c = "0.20.6"
-log = "0.4.17"
+tree-sitter = "0.22.6"
+tree-sitter-c = "0.21.4"
+log = "0.4.21"
 clap = "2.34.0"
-walkdir = "2.3.2"
-rayon = "1.5.3"
-colored = "2.0.0"
-simplelog = "0.12.0"
+walkdir = "2.5.0"
+rayon = "1.10.0"
+colored = "2.1.0"
+simplelog = "0.12.2"
 fancy-regex = "0.13.0"
 rustc-hash = "1.1.0"
-thread_local = "1.1"
+thread_local = "1.1.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde-sarif = "0.4.2"
-serde_json = "1.0.107"
+serde_json = "1.0"
 
 
 
@@ -32,7 +32,7 @@ serde_json = "1.0.107"
 nix = "0.25.0"
 
 [build-dependencies]
-cc = "1.0.73"
+cc = "*"
 
 [dev-dependencies]
 criterion = {version = "0.3",features = ["html_reports"]}

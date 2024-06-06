@@ -16,7 +16,7 @@ limitations under the License.
 
 // Try to parse a tree-sitter number literal into a constant value.
 // This function assumes that tree-sitter already parsed the input string
-// as a valid literal so we don't need to do much validation.
+// as a valid literal, so we don't need to do much validation.
 // The function should work for all integer literals, but will fail for
 // floats.
 pub fn parse_number_literal(input: &str) -> Option<i128> {

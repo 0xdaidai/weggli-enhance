@@ -30,7 +30,7 @@ pub struct QueryResult {
     pub vars: FxHashMap<String, usize>,
     // Range of the outermost node. This is badly named as it does not have to be a
     // function definition, but for final query results it normally is.
-    function: std::ops::Range<usize>,
+    function: Range<usize>,
 }
 
 /// Stores the result (== source range) for a single capture.
@@ -48,7 +48,7 @@ impl<'b> QueryResult {
     pub fn new(
         captures: Vec<CaptureResult>,
         vars: FxHashMap<String, usize>,
-        function: std::ops::Range<usize>,
+        function: Range<usize>,
     ) -> QueryResult {
         QueryResult {
             captures,
@@ -81,7 +81,7 @@ impl<'b> QueryResult {
         // Before printing out the different nodes, we first filter out overlapping nodes.
         // If we matched on `(a + b)` and also captured `b` clean_ranges will not contain
         // the range for `b`.
-        let mut clean_ranges: Vec<std::ops::Range<usize>> = Vec::with_capacity(self.captures.len());
+        let mut clean_ranges: Vec<Range<usize>> = Vec::with_capacity(self.captures.len());
         for r in sorted.into_iter().skip(1).map(|c| c.range) {
             if !clean_ranges.is_empty() && clean_ranges.last().unwrap().contains(&r.start) {
                 continue;
@@ -252,7 +252,7 @@ impl<'a> DisplayHelper<'a> {
             };
 
             result += &l[current_offset..start];
-            result += &format!("{}", l[start..end].red());
+            result += &format!("{}", l[start..end].red().bold());
             current_offset = end;
         }
         result += &l[current_offset..l.len()];
@@ -304,7 +304,8 @@ impl<'a> DisplayHelper<'a> {
             }
 
             if enable_line_numbers {
-                result += &format!("{:>4}: ", line_nr + 1);
+                let mut tmp = format!("{:>4}", line_nr + 1).bold().on_white();
+                result += (tmp.to_string() + " ").as_str()
             }
             result += &self.format(*offset, l, 0);
             skipped = false;

@@ -22,8 +22,6 @@ pub struct Args {
     pub code_path: PathBuf,
     pub rule_path: PathBuf,
     pub output_path: Option<String>,
-    pub before: usize,
-    pub after: usize,
     pub extensions: Vec<String>,
     pub limit: bool,
     pub cpp: bool,
@@ -83,20 +81,6 @@ pub fn parse_arguments() -> Args {
                 .takes_value(true)
                 .multiple(true)
                 .help("File extensions to include in the search."),
-        )
-        .arg(
-            Arg::with_name("before")
-                .long("before")
-                .short("B")
-                .takes_value(true)
-                .help("Lines to print before a match. Default = 5."),
-        )
-        .arg(
-            Arg::with_name("after")
-                .long("after")
-                .short("A")
-                .takes_value(true)
-                .help("Lines to print after a match. Default = 5."),
         )
         .arg(
             Arg::with_name("limit")
@@ -178,31 +162,6 @@ pub fn parse_arguments() -> Args {
     let directory_rule = Path::new(matches.value_of("RULES").unwrap_or("."));
     let directory_output = matches.value_of("output").map(|s| s.to_string());
 
-
-
-    //
-    // let output_path = if let Some(directory_output) = matches.value_of("output") {
-    //     let tmp_path = Path::new(directory_output);
-    //
-    //     if tmp_path.is_file(){
-    //         if tmp_path.is_absolute() {
-    //             tmp_path.to_path_buf()
-    //         }else {
-    //             std::env::current_dir().unwrap().join(directory_output)
-    //         }
-    //     }
-    //     if tmp_path.is_dir() {
-    //         if tmp_path.is_absolute() {
-    //             tmp_path.to_path_buf().join("results.sarif")
-    //         }else {
-    //             std::env::current_dir().unwrap().join(directory_output).join("results.sarif")
-    //         }
-    //         std::env::current_dir().unwrap().join(directory_output).join("results.sarif")
-    //     }
-    // } else {
-    //     None
-    // };
-
     let code_path = if directory_code.is_absolute() {
         directory_code.to_path_buf()
     } else {
@@ -213,16 +172,6 @@ pub fn parse_arguments() -> Args {
         directory_rule.to_path_buf()
     } else {
         std::env::current_dir().unwrap().join(directory_rule)
-    };
-
-    let before = match matches.value_of("before") {
-        Some(v) => v.parse().unwrap_or(5),
-        None => 5,
-    };
-
-    let after = match matches.value_of("after") {
-        Some(v) => v.parse().unwrap_or(5),
-        None => 5,
     };
 
     let limit = matches.occurrences_of("limit") > 0;
@@ -263,8 +212,6 @@ pub fn parse_arguments() -> Args {
         code_path,
         rule_path: rules_path,
         output_path: directory_output,
-        before,
-        after,
         extensions,
         limit,
         cpp,
@@ -351,22 +298,6 @@ strict:   Enable stricter matching. This turns off statement unwrapping and gree
  files can also be specified via STDIN by setting the directory to '-' 
  and piping a list of filenames.
  ";
-
-    //     pub const REGEX: &str = "\
-    //  Filter variable matches based on a regular expression.
-    //  This feature uses the Rust regex crate, so most Perl-style
-    //  regular expression features are supported.
-    //  (see https://docs.rs/regex/1.5.4/regex/#syntax)
-
-    //  Examples:
-
-    //  Find calls to functions starting with the string 'mem':
-    //  weggli -R 'func=^mem' '$func(_);'
-
-    //  Find memcpy calls where the last argument is NOT named 'size':
-    //  weggli -R 's!=^size$' 'memcpy(_,_,$s);'
-    //  ";
-
     pub const UNIQUE: &str = "\
  Enforce uniqueness of variable matches.
  By default, two variables such as $a and $b can match on identical values.

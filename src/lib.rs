@@ -19,7 +19,8 @@ use std::collections::{hash_map::Keys, HashMap};
 use colored::Colorize;
 use query::QueryTree;
 use fancy_regex::Regex;
-use tree_sitter::{Language, Parser, Query, Tree};
+use tree_sitter::{Parser, Query, Tree};
+use tree_sitter_c::language;
 
 #[macro_use]
 extern crate log;
@@ -31,9 +32,9 @@ mod util;
 pub mod query;
 pub mod result;
 
-extern "C" {
-    fn tree_sitter_c() -> Language;
-}
+// extern "C" {
+//     fn tree_sitter_c() -> Language;
+// }
 
 #[derive(Debug, Clone)]
 pub struct QueryError {
@@ -53,31 +54,20 @@ pub fn pattern_parse(source: &str) -> Tree {
     parser.parse(source, None).unwrap()
 }
 
-// pub fn get_parser() -> Parser {
-//     let language =  unsafe { tree_sitter_c() };
-//
-//
-//     let mut parser  = Parser::new();
-//     if let Err(e) = parser.set_language(language) {
-//         eprintln!("{}", e);
-//         panic!();
-//     }
-//     parser
-// }
-
 pub fn get_parser() -> Parser {
     let mut parser = Parser::new();
-    if let Err(e) = parser.set_language(tree_sitter_c::language()) {
+    if let Err(e) = parser.set_language(&language()) {
         eprintln!("{}", e);
         panic!();
     }
     parser
 }
 pub fn get_pattern_parser() -> Parser {
-    let language = unsafe { tree_sitter_c() };
+    // let language = unsafe { tree_sitter_c() };
+
 
     let mut parser = Parser::new();
-    if let Err(e) = parser.set_language(language) {
+    if let Err(e) = parser.set_language(&language()) {
         eprintln!("{}", e);
         panic!();
     }
@@ -85,11 +75,11 @@ pub fn get_pattern_parser() -> Parser {
 }
 
 // Internal helper function to create a new tree-sitter query.
-fn ts_query(sexpr: &str) -> Result<tree_sitter::Query, QueryError> {
+fn ts_query(sexpr: &str) -> Result<Query, QueryError> {
     // let language =  unsafe { tree_sitter_c() };
-    let language = tree_sitter_c::language();
+    let language = language();
 
-    match Query::new(language, sexpr) {
+    match Query::new(&language, sexpr) {
         Ok(q) => Ok(q),
         Err(e) => {
             let errmsg = format!( "Tree sitter query generation failed: {:?}\n {} \n sexpr: {}\n This is a bug! Can't recover :/", e.kind, e.message, sexpr);
@@ -186,7 +176,7 @@ const VALID_NODE_KINDS: &[&str] = &[
 /// If `force` is true, syntax errors are ignored. Returns a cursor to the
 /// root node.
 fn validate_query<'a>(
-    tree: &'a tree_sitter::Tree,
+    tree: &'a Tree,
     query: &str,
     force: bool,
 ) -> Result<tree_sitter::TreeCursor<'a>, QueryError> {
