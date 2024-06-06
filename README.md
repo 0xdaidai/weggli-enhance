@@ -340,5 +340,6 @@ The actual query matching is implemented in `query.rs`, which is a relatively sm
 
 ## License
 
-Apache 2.0; see [`LICENSE`](LICENSE) for details.
+Apache 2.0 for weggli-rs code; see [`LICENSE`](LICENSE-APACHE) for details.
 
+Special [`Terms and Conditions`](LICENSE) for weggli-enhance code.
