@@ -304,7 +304,7 @@ impl<'a> DisplayHelper<'a> {
             }
 
             if enable_line_numbers {
-                let mut tmp = format!("{:>4}", line_nr + 1).bold().on_white();
+                let tmp = format!("{:>4}", line_nr + 1).bold().on_white();
                 result += (tmp.to_string() + " ").as_str()
             }
             result += &self.format(*offset, l, 0);
